@@ -1,0 +1,70 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+.installed.cfg
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+.env
+
+# PyTorch / model artifacts
+*.pt
+*.pth
+*.ckpt
+models/
+checkpoints/
+
+# Dataset / cache / logs
+.cache/
+datasets/
+.huggingface/
+.huggingface_cache/
+cache/
+logs/
+*.log
+
+# Weights & Biases
+wandb/
+
+# Hydra
+.hydra/
+hydra-
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# IDEs and editors
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Temporary files
+tmp/
+temp/
+
+# Misc
+*.ckpt
+*.model
+*.tar.gz
