@@ -1,7 +1,7 @@
 import torch
 import datasets
 import pytorch_lightning as pl
-
+import os
 from datasets import load_dataset
 from transformers import AutoTokenizer
 
@@ -18,6 +18,27 @@ class DataModule(pl.LightningDataModule):
         self.batch_size = batch_size
         self.max_length = max_length
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.num_workers = None
+        self.pin_memory = False
+
+        # sensible defaults for data loading
+        # Note: Set num_workers to 0 on Windows to avoid multiprocessing issues
+        if self.num_workers is None:
+            import platform
+            if platform.system() == "Windows":
+                self.num_workers = 0
+            else:
+                try:
+                    cpus = os.cpu_count() or 1
+                except Exception:
+                    cpus = 1
+                # leave one CPU for main thread
+                self.num_workers = max(1, cpus - 1)
+        else:
+            self.num_workers = int(self.num_workers)
+
+        # use pinned memory if GPU is available
+        self.pin_memory = torch.cuda.is_available()
 
     def prepare_data(self):
         cola_dataset = load_dataset("glue", "cola")
@@ -49,12 +70,21 @@ class DataModule(pl.LightningDataModule):
 
     def train_dataloader(self):
         return torch.utils.data.DataLoader(
-            self.train_data, batch_size=self.batch_size, shuffle=True
+            self.train_data,
+            batch_size=self.batch_size,
+            shuffle=True,
+            num_workers=self.num_workers,
+            pin_memory=self.pin_memory,
         )
 
     def val_dataloader(self):
         return torch.utils.data.DataLoader(
-            self.val_data, batch_size=self.batch_size, shuffle=False
+            self.val_data,
+            batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=self.num_workers,
+            pin_memory=self.pin_memory,
+            persistent_workers=(self.num_workers > 0),
         )
 
 

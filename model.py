@@ -46,8 +46,9 @@ class ColaModel(pl.LightningModule):
         # loss = F.cross_entropy(logits, batch["label"])
         preds = torch.argmax(outputs.logits, 1)
         train_acc = self.train_accuracy_metric(preds, batch["label"])
-        self.log("train/loss", outputs.loss, prog_bar=True, on_epoch=True)
-        self.log("train/acc", train_acc, prog_bar=True, on_epoch=True)
+        batch_size = batch["input_ids"].size(0)
+        self.log("train/loss", outputs.loss, prog_bar=True, on_epoch=True, batch_size=batch_size)
+        self.log("train/acc", train_acc, prog_bar=True, on_epoch=True, batch_size=batch_size)
         return outputs.loss
 
     def validation_step(self, batch, batch_idx):
@@ -66,13 +67,15 @@ class ColaModel(pl.LightningModule):
         f1 = self.f1_metric(preds, labels)
 
         # Logging metrics
-        self.log("valid/loss", outputs.loss, prog_bar=True, on_step=True)
-        self.log("valid/acc", valid_acc, prog_bar=True, on_epoch=True)
-        self.log("valid/precision_macro", precision_macro, prog_bar=True, on_epoch=True)
-        self.log("valid/recall_macro", recall_macro, prog_bar=True, on_epoch=True)
-        self.log("valid/precision_micro", precision_micro, prog_bar=True, on_epoch=True)
-        self.log("valid/recall_micro", recall_micro, prog_bar=True, on_epoch=True)
-        self.log("valid/f1", f1, prog_bar=True, on_epoch=True)
+        batch_size = labels.size(0)
+        # include batch_size to avoid Lightning trying to infer it from ambiguous collections
+        self.log("valid/loss", outputs.loss, prog_bar=True, on_step=True, batch_size=batch_size)
+        self.log("valid/acc", valid_acc, prog_bar=True, on_epoch=True, batch_size=batch_size)
+        self.log("valid/precision_macro", precision_macro, prog_bar=True, on_epoch=True, batch_size=batch_size)
+        self.log("valid/recall_macro", recall_macro, prog_bar=True, on_epoch=True, batch_size=batch_size)
+        self.log("valid/precision_micro", precision_micro, prog_bar=True, on_epoch=True, batch_size=batch_size)
+        self.log("valid/recall_micro", recall_micro, prog_bar=True, on_epoch=True, batch_size=batch_size)
+        self.log("valid/f1", f1, prog_bar=True, on_epoch=True, batch_size=batch_size)
         return {"labels": labels, "logits": outputs.logits}
 
     def on_validation_epoch_end(self, outputs=None):
@@ -88,12 +91,11 @@ class ColaModel(pl.LightningModule):
 
         ## There are multiple ways to track the metrics
         # 1. Confusion matrix plotting using inbuilt W&B method
+        # move tensors to CPU before converting to numpy for logging
+        logits_np = logits.detach().cpu().numpy()
+        labels_np = labels.detach().cpu().numpy()
         self.logger.experiment.log(
-            {
-                "conf": wandb.plot.confusion_matrix(
-                    probs=logits.numpy(), y_true=labels.numpy()
-                )
-            }
+            {"conf": wandb.plot.confusion_matrix(probs=logits_np, y_true=labels_np)}
         )
 
         # 2. Confusion Matrix plotting using scikit-learn method
