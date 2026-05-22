@@ -12,3 +12,5 @@ omegaconf
 hydra-colorlog
 onnxscript
 onnxruntime
+fastapi
+uvicorn

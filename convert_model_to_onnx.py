@@ -1,7 +1,7 @@
-import torch
-import hydra
 import logging
-import warnings
+
+import hydra
+import torch
 
 from omegaconf.omegaconf import OmegaConf
 
@@ -10,20 +10,14 @@ from data import DataModule
 
 logger = logging.getLogger(__name__)
 
-warnings.filterwarnings(
-    "ignore",
-    message="triton not found; flop counting will not work for triton kernels",
-)
 
-
-@hydra.main(version_base=None, config_path="./configs", config_name="config")
+@hydra.main(config_path="./configs", config_name="config", version_base=None)
 def convert_model(cfg):
     root_dir = hydra.utils.get_original_cwd()
     model_path = f"{root_dir}/models/best-checkpoint.ckpt"
     logger.info(f"Loading pre-trained model from: {model_path}")
-    cola_model = ColaModel.load_from_checkpoint(model_path)
+    cola_model = ColaModel.load_from_checkpoint(model_path, map_location="cpu")
     cola_model.eval()
-    cola_model.cpu()
 
     data_model = DataModule(
         cfg.model.tokenizer, cfg.processing.batch_size, cfg.processing.max_length
@@ -31,10 +25,9 @@ def convert_model(cfg):
     data_model.prepare_data()
     data_model.setup()
     input_batch = next(iter(data_model.train_dataloader()))
-    export_device = next(cola_model.parameters()).device
     input_sample = {
-        "input_ids": input_batch["input_ids"][0].unsqueeze(0).to(export_device),
-        "attention_mask": input_batch["attention_mask"][0].unsqueeze(0).to(export_device),
+        "input_ids": input_batch["input_ids"][0].unsqueeze(0),
+        "attention_mask": input_batch["attention_mask"][0].unsqueeze(0),
     }
 
     # Export the model
@@ -46,13 +39,13 @@ def convert_model(cfg):
                 input_sample["input_ids"],
                 input_sample["attention_mask"],
             ),  # model input (or a tuple for multiple inputs)
-            f"{root_dir}/models/model.onnx",  # where to save the model
+            f"{root_dir}/models/model.onnx",  # where to save the model (can be a file or file-like object)
             export_params=True,
-            opset_version=18,
+            opset_version=14,
             input_names=["input_ids", "attention_mask"],  # the model's input names
             output_names=["output"],  # the model's output names
             dynamic_axes={
-                "input_ids": {0: "batch_size"},
+                "input_ids": {0: "batch_size"},  # variable length axes
                 "attention_mask": {0: "batch_size"},
                 "output": {0: "batch_size"},
             },

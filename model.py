@@ -20,6 +20,13 @@ class ColaModel(pl.LightningModule):
         self.bert = AutoModelForSequenceClassification.from_pretrained(
             model_name, num_labels=2
         )
+        # Force the stable eager attention path for export/runtime compatibility.
+        if hasattr(self.bert, "set_attn_implementation"):
+            self.bert.set_attn_implementation("eager")
+        if hasattr(self.bert, "config"):
+            self.bert.config.use_cache = False
+            if hasattr(self.bert.config, "_attn_implementation"):
+                self.bert.config._attn_implementation = "eager"
         self.num_classes = 2
         self.train_accuracy_metric = torchmetrics.Accuracy(task="binary")
         self.val_accuracy_metric = torchmetrics.Accuracy(task="binary")

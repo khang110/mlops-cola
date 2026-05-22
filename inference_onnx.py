@@ -1,31 +1,39 @@
 import numpy as np
 import onnxruntime as ort
 from scipy.special import softmax
+from transformers import AutoTokenizer
 
-from data import DataModule
 from utils import timing
 
 
 class ColaONNXPredictor:
     def __init__(self, model_path):
         self.ort_session = ort.InferenceSession(model_path)
-        self.processor = DataModule()
-        self.lables = ["unacceptable", "acceptable"]
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            "google/bert_uncased_L-2_H-128_A-2"
+        )
+        self.labels = ["unacceptable", "acceptable"]
 
     @timing
     def predict(self, text):
         inference_sample = {"sentence": text}
-        processed = self.processor.tokenize_data(inference_sample)
+        processed = self.tokenizer(
+            inference_sample["sentence"],
+            truncation=True,
+            padding="max_length",
+            max_length=128,
+        )
 
         ort_inputs = {
-            "input_ids": np.expand_dims(processed["input_ids"], axis=0),
-            "attention_mask": np.expand_dims(processed["attention_mask"], axis=0),
+            "input_ids": np.expand_dims(np.array(processed["input_ids"], dtype=np.int64), axis=0),
+            "attention_mask": np.expand_dims(np.array(processed["attention_mask"], dtype=np.int64), axis=0),
         }
         ort_outs = self.ort_session.run(None, ort_inputs)
         scores = softmax(ort_outs[0])[0]
         predictions = []
-        for score, label in zip(scores, self.lables):
-            predictions.append({"label": label, "score": score})
+        for score, label in zip(scores, self.labels):
+            predictions.append({"label": label, "score": float(score)})
+        print(predictions)
         return predictions
 
 

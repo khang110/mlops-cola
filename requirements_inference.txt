@@ -1,0 +1,6 @@
+numpy
+scipy
+transformers
+onnxruntime>=1.16.0
+fastapi
+uvicorn
