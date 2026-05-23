@@ -7,8 +7,6 @@ app = FastAPI(title="MLOps Basics App")
 async def home():
     return "<h2>This is a sample NLP Project</h2>"
 
-
-
 # load the model
 predictor = ColaONNXPredictor("./models/model.onnx")
 
