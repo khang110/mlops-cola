@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from mangum import Mangum
 from inference_onnx import ColaONNXPredictor
 app = FastAPI(title="MLOps Basics App")
 
@@ -15,3 +16,6 @@ predictor = ColaONNXPredictor("./models/model.onnx")
 async def get_prediction(text: str):
     result =  predictor.predict(text)
     return result
+
+
+handler = Mangum(app)
