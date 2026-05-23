@@ -3,20 +3,27 @@ FROM public.ecr.aws/lambda/python:3.11
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=utf-8
-ENV TRANSFORMERS_CACHE=${LAMBDA_TASK_ROOT}/transformers_cache
+ENV HF_HOME=/tmp/huggingface
+ENV TRANSFORMERS_CACHE=/tmp/huggingface
 
-COPY requirements_inference.txt .
-RUN pip install --no-cache-dir --only-binary=:all: -r requirements_inference.txt -t ${LAMBDA_TASK_ROOT}
+COPY ./ ${LAMBDA_TASK_ROOT}
+WORKDIR ${LAMBDA_TASK_ROOT}
 
-COPY . ${LAMBDA_TASK_ROOT}
+RUN pip install "dvc[s3]" pysqlite3-binary
+RUN pip install -r requirements_inference.txt
 
-# Downgrade ONNX model IR version: exported with IR 10, onnxruntime 1.16.3 supports max IR 9
-# Pin onnx==1.16.1: first version with IR 10 support, has binary wheels (no compiler needed)
-RUN pip install --no-cache-dir --only-binary=:all: "onnx==1.16.1" && \
-    python -c "import onnx; m=onnx.load('${LAMBDA_TASK_ROOT}/models/model.onnx'); m.ir_version=8; onnx.save(m, '${LAMBDA_TASK_ROOT}/models/model.onnx')"
+RUN python3 -c "import site,os; sc=os.path.join(site.getsitepackages()[0],'sitecustomize.py'); open(sc,'w').write('import sys\ntry:\n    import pysqlite3\n    sys.modules[\"sqlite3\"]=pysqlite3\nexcept Exception:\n    pass\n')"
 
-# Pre-download tokenizer so Lambda cold start needs no network access
-RUN PYTHONPATH=${LAMBDA_TASK_ROOT} python -c \
-    "from transformers import AutoTokenizer; AutoTokenizer.from_pretrained('google/bert_uncased_L-2_H-128_A-2')"
+RUN dvc remote add -d -f model-store s3://amz-models-dvc/trained_models/
+
+ARG AWS_ACCESS_KEY_ID
+ARG AWS_SECRET_ACCESS_KEY
+ARG AWS_DEFAULT_REGION=us-east-1
+
+ENV AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+ENV AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+ENV AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION
+
+RUN dvc pull dvcfiles/trained_model.dvc
 
 CMD ["app.handler"]
