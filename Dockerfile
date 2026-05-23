@@ -11,7 +11,8 @@ RUN pip install --no-cache-dir --only-binary=:all: -r requirements_inference.txt
 COPY . ${LAMBDA_TASK_ROOT}
 
 # Downgrade ONNX model IR version: exported with IR 10, onnxruntime 1.16.3 supports max IR 9
-RUN pip install --no-cache-dir onnx && \
+# Pin onnx==1.16.1: first version with IR 10 support, has binary wheels (no compiler needed)
+RUN pip install --no-cache-dir --only-binary=:all: "onnx==1.16.1" && \
     python -c "import onnx; m=onnx.load('${LAMBDA_TASK_ROOT}/models/model.onnx'); m.ir_version=8; onnx.save(m, '${LAMBDA_TASK_ROOT}/models/model.onnx')"
 
 # Pre-download tokenizer so Lambda cold start needs no network access
