@@ -19,7 +19,7 @@ jobs:
       - name: Pull ONNX model from DVC remote
         run: |
           pip install "dvc[s3]"
-          dvc pull dvcfiles/trained_model.onnx.dvc
+          dvc pull dvcfiles/trained_model.dvc
           mkdir -p models
           cp dvcfiles/trained_model.onnx models/model.onnx
       - name: Set up Docker Buildx
