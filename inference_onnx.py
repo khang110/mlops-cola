@@ -10,7 +10,7 @@ class ColaONNXPredictor:
     def __init__(self, model_path):
         self.ort_session = ort.InferenceSession(model_path)
         self.tokenizer = AutoTokenizer.from_pretrained(
-            "google/bert_uncased_L-2_H-128_A-2",
+            "./models/tokenizer",
             local_files_only=True,
         )
         self.labels = ["unacceptable", "acceptable"]

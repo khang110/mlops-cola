@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd /d \"D:\\\\MLOps\")",
+      "Bash(python -c \"import torch; print\\(torch.__version__\\)\")",
+      "PowerShell(python -c \"import torch; print\\(torch.__version__\\); import inspect; sig = inspect.signature\\(torch.onnx.export\\); print\\(list\\(sig.parameters.keys\\(\\)\\)\\)\")",
+      "PowerShell(& \"C:\\\\Users\\\\anhkh\\\\miniconda3\\\\envs\\\\mlops\\\\python.exe\" -c \"import torch; print\\(torch.__version__\\); import inspect; sig = inspect.signature\\(torch.onnx.export\\); print\\(list\\(sig.parameters.keys\\(\\)\\)\\)\")"
+    ]
+  }
+}

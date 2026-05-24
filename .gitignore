@@ -24,7 +24,11 @@ ENV/
 *.pt
 *.pth
 *.ckpt
-models/
+models/*
+!models/*.dvc
+!models/**/.gitignore
+!models/tokenizer/
+!models/tokenizer/*
 checkpoints/
 
 # Dataset / cache / logs
