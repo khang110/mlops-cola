@@ -14,4 +14,6 @@ RUN pip install -r requirements_inference.txt
 
 RUN python3 -c "import site,os; sc=os.path.join(site.getsitepackages()[0],'sitecustomize.py'); open(sc,'w').write('import sys\ntry:\n    import pysqlite3\n    sys.modules[\"sqlite3\"]=pysqlite3\nexcept Exception:\n    pass\n')"
 
-CMD ["app.handler"]
+RUN python lambda_handler.py
+# RUN chmod -R 0755 $MODEL_DIR
+CMD [ "lambda_handler.lambda_handler"]
